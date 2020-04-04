@@ -1,0 +1,12 @@
+.git
+assets
+docker-compose.yml
+.gitignore
+LICENSE
+NOTICE
+README.md
+results
+singularity.sh
+R
+RNAseq-preprocess.bib
+RNAseq-preprocess.Rproj
