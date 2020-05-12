@@ -21,7 +21,7 @@
 # For more details: https://divingintogeneticsandgenomics.rbind.io/post/run-rstudio-server-with-singularity-on-hpc/
 # Be sure to check images and paths.
 
-singularity pull -n rnaseq-preprocess.simg docker://eturkes/rnaseq-preprocess:R3.6.3v2
+singularity pull rnaseq-preprocess.simg docker://eturkes/rnaseq-preprocess:R3.6.3v2
 
 if [ "$1" = "all" ]; then
     singularity exec \
