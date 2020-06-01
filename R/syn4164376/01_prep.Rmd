@@ -1,0 +1,133 @@
+---
+title: '01 Prep - `r unlist(strsplit(getwd(), "/"))[6]`'
+author:
+  - name: "Emir Turkes [emir.turkes@eturkes.com]"
+  - name: "UK Dementia Research Institute at UCL"
+date: '`r strftime(Sys.time(), format = "%B %d, %Y")`'
+bibliography: '../../`r unlist(strsplit(getwd(), "/"))[4]`.bib'
+link-citations: true
+output:
+  html_document:
+    code_folding: hide
+    number_sections: true
+    theme: lumen
+    highlight: haddock
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(
+    "..", "..", "results", unlist(strsplit(getwd(), "/"))[6], "01-prep.html"
+  ))})
+---
+
+<style type="text/css">
+body {font-size: 16px;}
+h1.title {font-size: 35px;}
+h1 {font-size: 24px;}
+h2 {font-size: 22px;}
+h3 {font-size: 20px;}
+.toc-content {padding-left: 0px; padding-right: 0px;}
+div.tocify {width: 100%;}
+.tocify-subheader .tocify-item {font-size: 0.95em; padding-left: 25px; text-indent: 0;}
+.tocify-subheader .tocify-subheader .tocify-item {
+  font-size: 0.95em; padding-left: 35px; text-indent: 0;
+}
+div.main-container {max-width: none; width: 100%;}
+</style>
+
+*This file is a part of the [RNAseq-preprocess](https://github.com/eturkes/RNAseq-preprocess).*
+
+In this document we prepare the gene count matrix for downstream analysis.
+The data here is derived from @`r unlist(strsplit(getwd(), "/"))[6]` and will be referenced using the name ``r unlist(strsplit(getwd(), "/"))[6]``.
+
+```{r}
+# Copyright 2020 Emir Turkes
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This section should be checked per document.
+# Blank variables should be set to NULL.
+# --------------------------------------------
+options(stringsAsFactors = FALSE)
+packages <- c("conflicted", "synapser", "Rsubread")
+invisible(suppressPackageStartupMessages(lapply(packages, library, character.only = TRUE)))
+# --------------------------------------------
+
+# Everything else in this chunk remains generally unchanged.
+# ----------------------------------------------------------
+analysis_no <- 1
+data_name <- unlist(strsplit(getwd(), "/"))[6] # Name of dataset.
+assets_dir <- file.path(getwd(), "..", "..", "assets", data_name) # Backed up caches and data.
+
+tmp_dir <- file.path(getwd(), "..", "..", "tmp", data_name)
+if (!dir.exists(tmp_dir)) {
+  dir.create(tmp_dir, recursive = TRUE)
+}
+
+# Unique cache directory for each analysis number.
+# ------------------------------------------------
+if (!dir.exists(file.path(assets_dir, "cache", paste0("0", analysis_no)))) {
+  dir.create(file.path(assets_dir, "cache", paste0("0", analysis_no)), recursive = TRUE)
+}
+
+knitr::opts_chunk$set(fig.width = 10, fig.height = 7)
+# ------------------------------------------------
+# ----------------------------------------------------------
+```
+
+# Retrieve BAM Files
+
+```{r}
+files <- synGetChildren(data_name, list("file"))
+files_list <- as.list(files)
+names <- unlist(lapply(files_list, function(x) x$name))
+names <- gsub("\\..*", "", names)
+
+meta <- read.csv(file.path(assets_dir, "FINAL_METADATA.csv"))
+meta <- meta[which(meta$RIN > 8.5), ] # Apply a cutoff due to low storage space.
+# meta_names <- gsub("^.*_","", meta$Sample_ID)
+
+files_list_sub <- files_list[grepl(paste(meta$Sample_ID, collapse = "|"), names)]
+
+for (i in seq_along(files_list_sub)) {
+  synGet(files_list_sub[[i]]$id, downloadLocation = tmp_dir)
+}
+```
+
+# BAM to Count Matrix
+
+```{r, cache = TRUE}
+bam <- paste0(tmp_dir, "/", list.files(tmp_dir, pattern = ".*bam$"))
+gtf <- file.path(assets_dir, "..", "reference-genomes", "gencode.v24.annotation.gtf")
+
+rds <- file.path(assets_dir, "cache", paste0("0", analysis_no), "feature_counts.rds")
+if (file.exists(rds)) {
+  feature_counts <- readRDS(rds)
+} else {
+  feature_counts <- featureCounts(
+    bam, isPairedEnd = TRUE, nthreads = 36, annot.ext = gtf, isGTFAnnotationFile = TRUE
+  )
+  saveRDS(feature_counts, rds)
+}
+```
+
+# References
+
+This is the concluding section of the document. Here we output the `sessionInfo` and create a bibliography for works cited.
+
+```{r}
+sessionInfo()
+```
