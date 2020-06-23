@@ -44,7 +44,7 @@ In this document we prepare the gene count matrix for downstream analysis.
 The data here is derived from @`r unlist(strsplit(getwd(), "/"))[6]` and will be referenced using the name ``r unlist(strsplit(getwd(), "/"))[6]``.
 
 ```{r}
-# Copyright 2020 Emir Turkes
+# Copyright 2020 Emir Turkes, UK DRI at UCL
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
